@@ -1,41 +1,38 @@
-# Import necessary modules
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, redirect, url_for
 import sqlite3
 
-# Create a Flask application
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
-# Define a route for the home page
-@app.route('/', methods=['GET', 'POST'])
+# SQLite database configuration
+DATABASE = 'users.db'
+
+def create_db():
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS users
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)''')
+    conn.commit()
+    conn.close()
+
+@app.route('/')
 def index():
-    if request.method == 'POST':
-        # Get form data
-        username = request.form['username']
-        password = request.form['password']
+    return render_template('index.html')
 
-        # Connect to SQLite database
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
-
-        # Create users table if it doesn't exist
-        cursor.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, username TEXT, password TEXT)')
-
-        # Insert username and password into the table
-        cursor.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, password))
-        conn.commit()
-
-        # Fetch all users from the table
-        cursor.execute('SELECT * FROM users')
-        users = cursor.fetchall()
-
-        # Close database connection
-        conn.close()
-
-        # Render HTML template with users data
-        return render_template('index.html', users=users)
+@app.route('/login', methods=['POST'])
+def login():
+    username = request.form['username']
+    password = request.form['password']
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
+    user = c.fetchone()
+    conn.close()
+    if user:
+        return 'Login successful!'
     else:
-        return render_template('index.html', users=[])
+        return 'Invalid username or password.'
 
-# Run the Flask application
 if __name__ == '__main__':
+    create_db()
     app.run(debug=True)
