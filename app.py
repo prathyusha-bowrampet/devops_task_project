@@ -1,5 +1,8 @@
 import sqlite3
 import hashlib  # for hashing passwords
+from flask import Flask, render_template, request
+
+app = Flask(__name__)
 
 # Function to create a SQLite connection
 def create_connection(db_file):
@@ -39,12 +42,27 @@ def register(conn, username, password):
 def login(conn, username, password):
     print("Login function")
 
-# Example usage
-if __name__ == "__main__":
+# Route to register a user
+@app.route('/register', methods=['POST'])
+def register_user():
     db_file = "user.db"
     conn = create_connection(db_file)
     if conn:
         create_users_table(conn)
-        register(conn, "john", "password123")
-        login(conn, "john", "password123")
+        username = request.form['username']
+        password = request.form['password']
+        phone = request.form.get('phone', '')  # Get phone number if provided
+        register(conn, username, password)
         conn.close()
+        return render_template('register.html', message="Registration successful!")
+    else:
+        return render_template('register.html', message="Registration failed. Please try again later.")
+
+# Route to render the registration form
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+# Main function to run the Flask app
+if __name__ == '__main__':
+    app.run(debug=True)
