@@ -1,38 +1,42 @@
-from flask import Flask, render_template, request, redirect, url_for
-import sqlite3
+from flask import Flask, render_template, request, redirect, session
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# SQLite database configuration
-DATABASE = 'users.db'
-
-def create_db():
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-    c.execute('''CREATE TABLE IF NOT EXISTS users
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, password TEXT)''')
-    conn.commit()
-    conn.close()
+# Dummy database for storing registered users
+registered_users = {}
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/login', methods=['POST'])
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in registered_users:
+            return 'Username already exists!'
+        registered_users[username] = password
+        return 'Registration successful! You can now <a href="/login">login</a>.'
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    username = request.form['username']
-    password = request.form['password']
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-    c.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
-    user = c.fetchone()
-    conn.close()
-    if user:
-        return 'Login successful!'
-    else:
-        return 'Invalid username or password.'
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username in registered_users and registered_users[username] == password:
+            session['username'] = username
+            return 'Login successful!'
+        else:
+            return 'Invalid username or password. <a href="/register">Register</a> if you don\'t have an account.'
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return 'You have been logged out.'
 
 if __name__ == '__main__':
-    create_db()
     app.run(debug=True)

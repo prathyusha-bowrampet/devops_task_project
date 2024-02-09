@@ -1,16 +1,16 @@
-# Use Python 3.8 base image
-FROM python:3.8
+# Use the official Python image as base
+FROM python:3.8-slim
 
 # Set the working directory in the container
 WORKDIR /app
 
-# Copy requirements file to the container
+# Copy the dependencies file to the working directory
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code to the container
+# Copy the Flask application code to the container
 COPY . .
 
 # Expose port 5000 to the outside world
