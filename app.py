@@ -1,52 +1,50 @@
 import sqlite3
+import hashlib  # for hashing passwords
 
-# Function to create a SQLite connection and cursor
-def create_connection():
+# Function to create a SQLite connection
+def create_connection(db_file):
     try:
-        conn = sqlite3.connect('user.db')
-        cursor = conn.cursor()
-        return conn, cursor
+        conn = sqlite3.connect(db_file)
+        return conn
     except sqlite3.Error as e:
         print(e)
-    return None, None
+    return None
 
-# Function to create a users table in SQLite database if not exists
-def create_users_table():
-    conn, cursor = create_connection()
-    if conn:
-        try:
-            cursor.execute('''CREATE TABLE IF NOT EXISTS users (
-                                id INTEGER PRIMARY KEY,
-                                username TEXT NOT NULL,
-                                password TEXT NOT NULL
-                            )''')
-            conn.commit()
-        except sqlite3.Error as e:
-            print(e)
-        finally:
-            conn.close()
+# Function to create the users table
+def create_users_table(conn):
+    try:
+        cursor = conn.cursor()
+        cursor.execute('''CREATE TABLE IF NOT EXISTS users (
+                            id INTEGER PRIMARY KEY,
+                            username TEXT NOT NULL,
+                            password TEXT NOT NULL
+                        )''')
+        conn.commit()
+    except sqlite3.Error as e:
+        print(e)
 
-# Function to register a user and store details in the SQLite database
-def register(username, password):
-    create_users_table()  # Ensure users table exists
-    conn, cursor = create_connection()
-    if conn:
-        try:
-            cursor.execute('''INSERT INTO users (username, password) VALUES (?, ?)''', (username, password))
-            conn.commit()
-            print("User registered successfully!")
-        except sqlite3.Error as e:
-            print(e)
-        finally:
-            conn.close()
+# Function to register a user
+def register(conn, username, password):
+    try:
+        cursor = conn.cursor()
+        # Hash the password before storing it
+        hashed_password = hashlib.sha256(password.encode()).hexdigest()
+        cursor.execute('''INSERT INTO users (username, password) VALUES (?, ?)''', (username, hashed_password))
+        conn.commit()
+        print("User registered successfully!")
+    except sqlite3.Error as e:
+        print(e)
 
-# Function to log in a user (just a placeholder)
-def login(username, password):
+# Function to log in a user (placeholder)
+def login(conn, username, password):
     print("Login function")
 
 # Example usage
 if __name__ == "__main__":
-    # Register a user
-    register("john", "password123")
-    # Log in a user
-    login("john", "password123")
+    db_file = "user.db"
+    conn = create_connection(db_file)
+    if conn:
+        create_users_table(conn)
+        register(conn, "john", "password123")
+        login(conn, "john", "password123")
+        conn.close()
